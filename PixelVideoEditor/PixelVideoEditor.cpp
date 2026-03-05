@@ -16,7 +16,6 @@ PixelVideoEditor::PixelVideoEditor(QWidget* parent)
 
     videoWidget = new QVideoWidget(ui.centralWidget);
     mediaPlayer->setVideoOutput(videoWidget);
-    mediaPlayer->setVideoOutput(videoWidget);
 
     videoWidget->installEventFilter(this);
 
@@ -293,8 +292,8 @@ void PixelVideoEditor::onSliderMoved(int position)
 
 void PixelVideoEditor::onSliderReleased()
 {
+    mediaPlayer->setPosition(ui.SeekSlider->value());
+
     if (wasPlayingBeforeDrag)
-    {
         mediaPlayer->play();
-    }
 }

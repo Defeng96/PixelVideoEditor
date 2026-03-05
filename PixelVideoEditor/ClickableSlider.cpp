@@ -1,25 +1,46 @@
 #include "ClickableSlider.h"
+#include <QStyle>
+#include <QStyleOptionSlider>
 
 ClickableSlider::ClickableSlider(QWidget* parent)
     : QSlider(parent)
 {
-    // UI에서 orientation 지정해도 되지만,
-    // 안전하게 기본을 수평으로 고정
     setOrientation(Qt::Horizontal);
 }
 
 void ClickableSlider::mousePressEvent(QMouseEvent* event)
 {
-    if (orientation() == Qt::Horizontal)
+    if (event->button() != Qt::LeftButton)
     {
-        int value = minimum() + ((maximum() - minimum()) * event->pos().x()) / width();
-        setValue(value);
-
-        // 클릭하자마자 이동 + 기존 로직(sliderMoved 연결) 재사용
-        emit sliderMoved(value);
-        emit sliderPressed();
-        emit sliderReleased();
+        QSlider::mousePressEvent(event);
+        return;
     }
 
+    QStyleOptionSlider opt;
+    initStyleOption(&opt);
+
+    // 핸들 영역 얻기
+    const QRect handleRect = style()->subControlRect(
+        QStyle::CC_Slider, &opt, QStyle::SC_SliderHandle, this
+    );
+
+    // 1) 핸들을 눌렀으면: 기본 동작(드래그) 그대로
+    if (handleRect.contains(event->pos()))
+    {
+        QSlider::mousePressEvent(event);
+        return;
+    }
+
+    // 2) 바(그루브) 눌렀으면: 클릭 위치로 점프
+    const int x = event->pos().x();
+    const int w = width();
+
+    const int value = QStyle::sliderValueFromPosition(
+        minimum(), maximum(), x, w
+    );
+
+    setValue(value);
+
+    // 3) 이후 드래그도 가능하게 기본 동작으로 넘김
     QSlider::mousePressEvent(event);
 }
