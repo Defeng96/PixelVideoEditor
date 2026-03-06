@@ -10,6 +10,7 @@
 #include <QAudioOutput>
 #include <QVideoWidget>
 #include <QTimer>
+#include <QLabel>
 
 class PixelVideoEditor : public QMainWindow
 {
@@ -32,6 +33,7 @@ private:
     QAudioOutput* audioOutput = nullptr;
     QVideoWidget* videoWidget = nullptr;
     QTimer* clickTimer;
+    QLabel* timeLabel;
     
     cv::Mat currentFrame;
     int timerInterval = 30;

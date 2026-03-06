@@ -28,6 +28,12 @@ PixelVideoEditor::PixelVideoEditor(QWidget* parent)
     clickTimer = new QTimer(this);
     clickTimer->setSingleShot(true);
 
+    timeLabel = new QLabel(ui.centralWidget);
+    timeLabel->setText("00:00.00 / 00:00.00");
+    timeLabel->setAlignment(Qt::AlignCenter);
+    timeLabel->setStyleSheet("color: black;");
+    timeLabel->show();
+
     connect(clickTimer, &QTimer::timeout, this, [this]()
         {
             if (!pendingSingleClick)
@@ -97,11 +103,10 @@ void PixelVideoEditor::resizeEvent(QResizeEvent* event)
 
     videoWidget->setGeometry(x, y, videoWidth, videoHeight);
 
-    int controlH = 30;
+    int controlSize = 30;
     int spacing = 10;
 
-    int playW = 60;
-    int fullW = 60;
+    int timeW = 120;
 
     int controlY = y + videoHeight + 10;
 
@@ -109,24 +114,31 @@ void PixelVideoEditor::resizeEvent(QResizeEvent* event)
     ui.PlayPauseButton->setGeometry(
         x,
         controlY,
-        playW,
-        controlH
+        controlSize,
+        controlSize
+    );
+
+    timeLabel->setGeometry(
+        x + controlSize + 5,
+        controlY,
+        timeW,
+        controlSize
     );
 
     // ⛶ 전체화면 버튼 (오른쪽)
     ui.FullscreenButton->setGeometry(
-        x + videoWidth - fullW,
+        x + videoWidth - controlSize,
         controlY,
-        fullW,
-        controlH
+        controlSize,
+        controlSize
     );
 
     // 슬라이더 (가운데)
     ui.SeekSlider->setGeometry(
-        x + playW + spacing,
+        x + controlSize + timeW + spacing,
         controlY,
-        videoWidth - (playW + spacing) - (fullW + spacing),
-        controlH
+        videoWidth - (controlSize + timeW + spacing) - (controlSize + spacing),
+        controlSize
     );
 
     // (겹침 방지용)
@@ -266,12 +278,31 @@ void PixelVideoEditor::updateSliderRange(qint64 duration)
     ui.SeekSlider->setRange(0, duration);
 }
 
+QString formatTime(qint64 ms)
+{
+    int minutes = ms / 60000;
+    int seconds = (ms % 60000) / 1000;
+    int centiseconds = (ms % 1000) / 10; // 소수점 두자리
+
+    return QString("%1:%2.%3")
+        .arg(minutes, 2, 10, QChar('0'))
+        .arg(seconds, 2, 10, QChar('0'))
+        .arg(centiseconds, 2, 10, QChar('0'));
+}
+
 void PixelVideoEditor::updateSliderPosition(qint64 position)
 {
     if (!ui.SeekSlider->isSliderDown())
     {
         ui.SeekSlider->setValue(position);
     }
+
+    qint64 duration = mediaPlayer->duration();
+
+    QString current = formatTime(position);
+    QString total = formatTime(duration);
+
+    timeLabel->setText(current + " / " + total);
 }
 
 void PixelVideoEditor::onSliderPressed()
@@ -297,3 +328,4 @@ void PixelVideoEditor::onSliderReleased()
     if (wasPlayingBeforeDrag)
         mediaPlayer->play();
 }
+
