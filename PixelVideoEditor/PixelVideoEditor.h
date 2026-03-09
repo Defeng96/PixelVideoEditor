@@ -11,6 +11,8 @@
 #include <QVideoWidget>
 #include <QTimer>
 #include <QLabel>
+#include <QDoubleSpinBox>
+
 
 class PixelVideoEditor : public QMainWindow
 {
@@ -34,13 +36,17 @@ private:
     QVideoWidget* videoWidget = nullptr;
     QTimer* clickTimer;
     QLabel* timeLabel;
-    
+    Qt::WindowStates previousWindowState;
+    QPushButton* rewindButton;
+    QPushButton* forwardButton;
+    QDoubleSpinBox* seekStepSpin;
+
     cv::Mat currentFrame;
     int timerInterval = 30;
     bool isFullscreen = false;
     bool wasPlayingBeforeDrag = false;
     bool pendingSingleClick = false;
-
+    double seekStepSeconds = 5.00;   
 
 private slots:
     void togglePlayPauseInternal();
@@ -52,6 +58,9 @@ private slots:
     void onSliderPressed();
     void onSliderMoved(int position);
     void onSliderReleased();
+
+    void seekForward();
+    void seekBackward();
 
     void openFile();
 };

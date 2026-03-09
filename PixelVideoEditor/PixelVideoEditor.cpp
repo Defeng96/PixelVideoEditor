@@ -34,6 +34,15 @@ PixelVideoEditor::PixelVideoEditor(QWidget* parent)
     timeLabel->setStyleSheet("color: black;");
     timeLabel->show();
 
+    rewindButton = new QPushButton("<<", ui.centralWidget);
+    forwardButton = new QPushButton(">>", ui.centralWidget);
+
+    seekStepSpin = new QDoubleSpinBox(ui.centralWidget);
+    seekStepSpin->setDecimals(2);
+    seekStepSpin->setRange(0.01, 600.0);
+    seekStepSpin->setValue(5.00);
+    seekStepSpin->setSingleStep(0.01);
+
     connect(clickTimer, &QTimer::timeout, this, [this]()
         {
             if (!pendingSingleClick)
@@ -73,6 +82,24 @@ PixelVideoEditor::PixelVideoEditor(QWidget* parent)
 
     connect(mediaPlayer, &QMediaPlayer::durationChanged,
         this, &PixelVideoEditor::updateSliderRange);
+
+    connect(ui.RewindButton,
+        &QPushButton::clicked,
+        this,
+        &PixelVideoEditor::seekBackward);
+
+    connect(ui.ForwardButton,
+        &QPushButton::clicked,
+        this,
+        &PixelVideoEditor::seekForward);
+
+    connect(ui.SeekStepSpin,
+        QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+        this,
+        [this](double v)
+        {
+            seekStepSeconds = v;
+        });
 }
 
 PixelVideoEditor::~PixelVideoEditor()
@@ -110,6 +137,10 @@ void PixelVideoEditor::resizeEvent(QResizeEvent* event)
 
     int controlY = y + videoHeight + 10;
 
+    int rewindW = controlSize;
+    int forwardW = controlSize;
+    int spinW = 70;
+
     // ▶/⏸ 버튼 (왼쪽)
     ui.PlayPauseButton->setGeometry(
         x,
@@ -118,8 +149,29 @@ void PixelVideoEditor::resizeEvent(QResizeEvent* event)
         controlSize
     );
 
+    rewindButton->setGeometry(
+        x + controlSize + spacing,
+        controlY,
+        rewindW,
+        controlSize
+    );
+
+    seekStepSpin->setGeometry(
+        x + controlSize + rewindW + spacing * 2,
+        controlY,
+        spinW,
+        controlSize
+    );
+
+    forwardButton->setGeometry(
+        x + controlSize + rewindW + spinW + spacing * 3,
+        controlY,
+        forwardW,
+        controlSize
+    );
+
     timeLabel->setGeometry(
-        x + controlSize + 5,
+        x + controlSize + rewindW + spinW + forwardW + spacing * 4,
         controlY,
         timeW,
         controlSize
@@ -135,9 +187,9 @@ void PixelVideoEditor::resizeEvent(QResizeEvent* event)
 
     // 슬라이더 (가운데)
     ui.SeekSlider->setGeometry(
-        x + controlSize + timeW + spacing,
+        x + controlSize + rewindW + spinW + forwardW + timeW + spacing * 5,
         controlY,
-        videoWidth - (controlSize + timeW + spacing) - (controlSize + spacing),
+        videoWidth - (controlSize + rewindW + spinW + forwardW + timeW + spacing * 5) - (controlSize + spacing),
         controlSize
     );
 
@@ -153,6 +205,9 @@ void PixelVideoEditor::toggleFullscreen()
 
     if (isFullscreen)
     {
+        // 현재 창 상태 전체 저장
+        previousWindowState = windowState();
+
         showFullScreen();
 
         if (ui.menuBar) ui.menuBar->hide();
@@ -162,13 +217,14 @@ void PixelVideoEditor::toggleFullscreen()
         ui.PlayPauseButton->hide();
         ui.SeekSlider->hide();
         ui.FullscreenButton->hide();
+        timeLabel->hide();
 
-        // 영상 꽉 채우기
         videoWidget->setGeometry(0, 0, width(), height());
     }
     else
     {
-        showNormal();
+        // 창 상태 복원
+        setWindowState(previousWindowState);
 
         if (ui.menuBar) ui.menuBar->show();
         if (ui.statusBar) ui.statusBar->show();
@@ -177,6 +233,9 @@ void PixelVideoEditor::toggleFullscreen()
         ui.PlayPauseButton->show();
         ui.SeekSlider->show();
         ui.FullscreenButton->show();
+        timeLabel->show();
+
+        resizeEvent(nullptr);
     }
 }
 
@@ -327,5 +386,27 @@ void PixelVideoEditor::onSliderReleased()
 
     if (wasPlayingBeforeDrag)
         mediaPlayer->play();
+}
+
+void PixelVideoEditor::seekForward()
+{
+    qint64 step = seekStepSeconds * 1000.0;
+    qint64 newPos = mediaPlayer->position() + step;
+
+    if (newPos > mediaPlayer->duration())
+        newPos = mediaPlayer->duration();
+
+    mediaPlayer->setPosition(newPos);
+}
+
+void PixelVideoEditor::seekBackward()
+{
+    qint64 step = seekStepSeconds * 1000.0;
+    qint64 newPos = mediaPlayer->position() - step;
+
+    if (newPos < 0)
+        newPos = 0;
+
+    mediaPlayer->setPosition(newPos);
 }
 
