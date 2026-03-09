@@ -83,17 +83,17 @@ PixelVideoEditor::PixelVideoEditor(QWidget* parent)
     connect(mediaPlayer, &QMediaPlayer::durationChanged,
         this, &PixelVideoEditor::updateSliderRange);
 
-    connect(ui.RewindButton,
+    connect(rewindButton,
         &QPushButton::clicked,
         this,
         &PixelVideoEditor::seekBackward);
 
-    connect(ui.ForwardButton,
+    connect(forwardButton,
         &QPushButton::clicked,
         this,
         &PixelVideoEditor::seekForward);
 
-    connect(ui.SeekStepSpin,
+    connect(seekStepSpin,
         QOverload<double>::of(&QDoubleSpinBox::valueChanged),
         this,
         [this](double v)
